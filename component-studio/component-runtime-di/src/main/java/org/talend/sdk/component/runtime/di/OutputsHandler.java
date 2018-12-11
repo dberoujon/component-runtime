@@ -80,13 +80,26 @@ public class OutputsHandler extends BaseIOHandler {
     }
 
     /**
-     * Copies records from all inputs to reject
+     * Copies all records from all inputs to reject
      */
-    public void processException(Exception e) {
+    public void afterGroupException(Exception e) {
         final BaseIOHandler.IO reject = connections.get("REJECT");
 
         cachedConnections.values().forEach(io -> {
             while (io.hasNext()) {
+                reject.add(io.next());
+            }
+        });
+    }
+
+    /**
+     * Copies all records from all inputs to reject
+     */
+    public void onNextException(Exception e) {
+        final BaseIOHandler.IO reject = connections.get("REJECT");
+
+        cachedConnections.values().forEach(io -> {
+            if (io.hasNext()) {
                 reject.add(io.next());
             }
         });
