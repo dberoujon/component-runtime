@@ -16,6 +16,7 @@
 package org.talend.sdk.component.runtime.di;
 
 import java.util.Map;
+import java.util.TreeMap;
 
 import javax.json.JsonBuilderFactory;
 import javax.json.JsonObject;
@@ -30,6 +31,11 @@ public class OutputsHandler extends BaseIOHandler {
     private final JsonProvider jsonProvider;
 
     private final JsonBuilderFactory jsonBuilderFactory;
+
+    /**
+     * Copy of input connections and their data
+     */
+    protected final Map<String, IO> cachedConnections = new TreeMap<>();
 
     public OutputsHandler(final Jsonb jsonb, final Map<Class<?>, Object> servicesMapper) {
         super(jsonb, servicesMapper);
@@ -56,6 +62,34 @@ public class OutputsHandler extends BaseIOHandler {
                 ref.add(jsonb.fromJson(jsonValueMapper, ref.getType()));
             }
         };
+    }
+
+    public void addCachedConnection(final String connectorName, final Class<?> type) {
+        cachedConnections.put(connectorName, new IO<>(type));
+    }
+
+    public void resetCached() {
+        cachedConnections.values().forEach(IO::reset);
+    }
+
+    public <T> void setCachedValue(final String name, final T value) {
+        final IO input = cachedConnections.get(getActualName(name));
+        if (input != null) {
+            input.add(value);
+        }
+    }
+
+    /**
+     * Copies records from all inputs to reject
+     */
+    public void processException(Exception e) {
+        final BaseIOHandler.IO reject = connections.get("REJECT");
+
+        cachedConnections.values().forEach(io -> {
+            while (io.hasNext()) {
+                reject.add(io.next());
+            }
+        });
     }
 
 }

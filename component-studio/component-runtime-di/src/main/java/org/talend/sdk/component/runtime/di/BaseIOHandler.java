@@ -91,7 +91,7 @@ public abstract class BaseIOHandler {
 
         private final Class<T> type;
 
-        private void reset() {
+        void reset() {
             values.clear();
         }
 
