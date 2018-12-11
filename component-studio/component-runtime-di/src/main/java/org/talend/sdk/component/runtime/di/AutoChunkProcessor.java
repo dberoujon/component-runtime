@@ -31,17 +31,20 @@ public class AutoChunkProcessor implements Lifecycle {
 
     private int processedItemCount = 0;
 
-    public void onElement(final InputFactory ins, final OutputFactory outs) {
+    public void onElement(final InputFactory ins, final OutputFactory outs, final OutputsHandler handler) {
         if (processedItemCount == 0) {
             processor.beforeGroup();
         }
         try {
             processor.onNext(ins, outs);
             processedItemCount++;
-        } finally {
+        } catch(RuntimeException e) {
+            handler.onNextException(e);
+        }finally {
             if (processedItemCount == chunkSize) {
                 processor.afterGroup(outs);
                 processedItemCount = 0;
+                handler.resetCached();
             }
         }
     }
