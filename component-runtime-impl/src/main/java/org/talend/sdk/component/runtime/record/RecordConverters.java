@@ -641,6 +641,30 @@ public class RecordConverters implements Serializable {
                         recordProvisionners
                                 .add((builder, instance) -> ofNullable(getField(instance, field, Boolean.class))
                                         .ifPresent(value -> builder.withBoolean(entry, value)));
+                    } else if (fieldType == byte.class) {
+                        instanceProvisionners
+                                .add((instance, record) -> setField(instance, field,
+                                        record.getOptionalInt(name).orElse(0)));
+                        final Schema.Entry entry = newEntry(builderFactory, name, false, INT);
+                        schemaBuilder.withEntry(entry);
+                        recordProvisionners
+                                .add((builder, instance) -> ofNullable(getField(instance, field, Byte.class))
+                                        .ifPresent(value -> builder.withInt(entry, value)));
+                    } else if (fieldType == Byte.class) {
+                        instanceProvisionners
+                                .add((instance, record) -> {
+                                    final OptionalInt value = record.getOptionalInt(name);
+                                    if (value.isPresent()) {
+                                        setField(instance, field, (byte) value.getAsInt());
+                                    } else {
+                                        setField(instance, field, null);
+                                    }
+                                });
+                        final Schema.Entry entry = newEntry(builderFactory, name, true, INT);
+                        schemaBuilder.withEntry(entry);
+                        recordProvisionners
+                                .add((builder, instance) -> ofNullable(getField(instance, field, Byte.class))
+                                        .ifPresent(value -> builder.withInt(entry, value)));
                     } else if (fieldType.isArray()) {
                         instanceProvisionners
                                 .add((instance, record) -> setField(instance, field,

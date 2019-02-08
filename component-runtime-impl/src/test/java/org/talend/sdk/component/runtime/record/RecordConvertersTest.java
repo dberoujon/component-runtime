@@ -21,9 +21,12 @@ import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Base64;
@@ -165,6 +168,102 @@ class RecordConvertersTest {
     }
 
     @Test
+    void convertByteToInt() throws Exception {
+        final byte byteValue = 42;
+        final Record record = recordBuilderFactory.newRecordBuilder().withInt("value", byteValue).build();
+        try (final Jsonb jsonb = JsonbBuilder.create()) {
+            final NullableByteStruct struct = NullableByteStruct.class
+                    .cast(converter
+                            .toType(new RecordConverters.MappingMetaRegistry(), record, NullableByteStruct.class,
+                                    () -> jsonBuilderFactory, () -> jsonProvider, () -> jsonb,
+                                    () -> recordBuilderFactory));
+            assertEquals(byteValue, struct.value);
+            final Record toRecord = converter
+                    .toRecord(new RecordConverters.MappingMetaRegistry(), struct, () -> jsonb,
+                            () -> recordBuilderFactory);
+            assertEquals(Schema.Type.INT, toRecord.getSchema().getEntries().iterator().next().getType());
+            assertEquals(byteValue, toRecord.getInt("value"));
+        }
+    }
+
+    @Test
+    void convertByteToIntNull() throws Exception {
+        final Record record = recordBuilderFactory.newRecordBuilder().build();
+        try (final Jsonb jsonb = JsonbBuilder.create()) {
+            final NullableByteStruct struct = NullableByteStruct.class
+                    .cast(converter
+                            .toType(new RecordConverters.MappingMetaRegistry(), record, NullableByteStruct.class,
+                                    () -> jsonBuilderFactory, () -> jsonProvider, () -> jsonb,
+                                    () -> recordBuilderFactory));
+            assertEquals(null, struct.value);
+            final Record toRecord = converter
+                    .toRecord(new RecordConverters.MappingMetaRegistry(), struct, () -> jsonb,
+                            () -> recordBuilderFactory);
+            assertEquals(Schema.Type.INT, toRecord.getSchema().getEntries().iterator().next().getType());
+            assertFalse(toRecord.getOptionalInt("value").isPresent());
+        }
+    }
+
+    @Test
+    void convertCharToString() throws Exception {
+        final char expectedChar = 'c';
+        final String expectedString = "c";
+        final Record record = recordBuilderFactory.newRecordBuilder().withString("value", expectedString).build();
+        try (final Jsonb jsonb = JsonbBuilder.create()) {
+            final NullableCharStruct struct = NullableCharStruct.class
+                    .cast(converter
+                            .toType(new RecordConverters.MappingMetaRegistry(), record, NullableCharStruct.class,
+                                    () -> jsonBuilderFactory, () -> jsonProvider, () -> jsonb,
+                                    () -> recordBuilderFactory));
+            assertEquals(expectedChar, struct.value);
+            final Record toRecord = converter
+                    .toRecord(new RecordConverters.MappingMetaRegistry(), struct, () -> jsonb,
+                            () -> recordBuilderFactory);
+            assertEquals(Schema.Type.STRING, toRecord.getSchema().getEntries().iterator().next().getType());
+            assertEquals(expectedString, toRecord.getString("value"));
+        }
+    }
+
+    @Test
+    void convertCharToStringTrim() throws Exception {
+        final char expectedChar = 'c';
+        final String charString = "char";
+        final String expcetedString = "c";
+        final Record record = recordBuilderFactory.newRecordBuilder().withString("value", charString).build();
+        try (final Jsonb jsonb = JsonbBuilder.create()) {
+            final NullableCharStruct struct = NullableCharStruct.class
+                    .cast(converter
+                            .toType(new RecordConverters.MappingMetaRegistry(), record, NullableCharStruct.class,
+                                    () -> jsonBuilderFactory, () -> jsonProvider, () -> jsonb,
+                                    () -> recordBuilderFactory));
+            assertEquals(expectedChar, struct.value);
+            final Record toRecord = converter
+                    .toRecord(new RecordConverters.MappingMetaRegistry(), struct, () -> jsonb,
+                            () -> recordBuilderFactory);
+            assertEquals(Schema.Type.STRING, toRecord.getSchema().getEntries().iterator().next().getType());
+            assertEquals(expcetedString, toRecord.getString("value"));
+        }
+    }
+
+    @Test
+    void convertCharToStringNull() throws Exception {
+        final Record record = recordBuilderFactory.newRecordBuilder().withString("value", null).build();
+        try (final Jsonb jsonb = JsonbBuilder.create()) {
+            final NullableCharStruct struct = NullableCharStruct.class
+                    .cast(converter
+                            .toType(new RecordConverters.MappingMetaRegistry(), record, NullableCharStruct.class,
+                                    () -> jsonBuilderFactory, () -> jsonProvider, () -> jsonb,
+                                    () -> recordBuilderFactory));
+            assertEquals(null, struct.value);
+            final Record toRecord = converter
+                    .toRecord(new RecordConverters.MappingMetaRegistry(), struct, () -> jsonb,
+                            () -> recordBuilderFactory);
+            assertEquals(Schema.Type.STRING, toRecord.getSchema().getEntries().iterator().next().getType());
+            assertEquals(null, toRecord.getString("value"));
+        }
+    }
+
+    @Test
     void convertDateToString() {
         final ZonedDateTime dateTime = ZonedDateTime.of(2017, 7, 17, 9, 0, 0, 0, ZoneId.of("GMT"));
         final String stringValue = dateTime.format(ISO_ZONED_DATE_TIME);
@@ -228,5 +327,20 @@ class RecordConvertersTest {
     public static class BoolStruct implements IPersistableRow {
 
         public boolean value;
+    }
+
+    public static class NullableByteStruct implements IPersistableRow {
+
+        public Byte value;
+    }
+
+    public static class NullableCharStruct implements IPersistableRow {
+
+        public Character value;
+    }
+
+    public static class BigDecimalStruct implements IPersistableRow {
+
+        public BigDecimal value;
     }
 }
